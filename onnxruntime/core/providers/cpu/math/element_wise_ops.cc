@@ -544,21 +544,20 @@ Status BitShift<T>::Compute(OpKernelContext* context) const {
       },
       [this](EigenVectorMap<T> output, ConstEigenVectorMap<T> input0, ConstEigenVectorMap<T> input1) {
         auto cur0 = input0.begin(), end0 = input0.end();
-        auto cur1 = input1.begin(), end1 = input0.end();
+        auto cur1 = input1.begin(), end1 = input1.end();
         auto cur_out = output.begin(), end_out = output.end();
         if (shift_left_) {
           for (; cur0 != end0; ++cur0, ++cur1, ++cur_out) {
-            assert(cur1 != end1);
-            assert(cur_out != end_out);
             *cur_out = *cur0 << *cur1;
           }
         } else {
           for (; cur0 != end0; ++cur0, ++cur1, ++cur_out) {
-            assert(cur1 != end1);
-            assert(cur_out != end_out);
             *cur_out = *cur0 >> *cur1;
           }
         }
+
+        ORT_ENFORCE(cur1 == end1);
+        ORT_ENFORCE(cur_out == end_out);
       });
 }
 
