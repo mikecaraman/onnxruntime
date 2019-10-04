@@ -631,8 +631,8 @@ def run_onnx_tests(build_dir, configs, onnx_test_data_dir, provider, enable_para
           cmd += ["-j", str(num_parallel_models)]
 
         if config != 'Debug' and os.path.exists(model_dir):
-          if provider == 'tensorrt':
-            model_dir = os.path.join(model_dir, "opset8")
+          ##if provider == 'tensorrt':
+            ##model_dir = os.path.join(model_dir, "opset8")
           cmd.append(model_dir)
         if os.path.exists(onnx_test_data_dir):
           cmd.append(onnx_test_data_dir)
