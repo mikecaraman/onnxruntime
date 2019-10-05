@@ -47,7 +47,7 @@ fi
 if [ $DEVICE_TYPE = "Normal" ]; then
     /usr/bin/python${PYTHON_VER} -m pip install --upgrade --force-reinstall sympy==1.1.1
 fi
-/usr/bin/python${PYTHON_VER} -m pip install --upgrade scipy
+/usr/bin/python${PYTHON_VER} -m pip install --upgrade scipy pytest
 
 #install onnx
 export ONNX_ML=1
