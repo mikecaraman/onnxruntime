@@ -628,18 +628,19 @@ def run_onnx_tests(build_dir, configs, onnx_test_data_dir, provider, enable_para
 
         if num_parallel_models > 0:
           cmd += ["-j", str(num_parallel_models)]
-
-        if config != 'Debug' and os.path.exists(model_dir):
-          # some models in opset9 and above are not supported by TensorRT yet
-          if provider == 'tensorrt':
-            model_dir = os.path.join(model_dir, "opset8")
+        
+        if provider == 'tensorrt' and os.path.exists(model_dir):
+          # some models in opset9 and above are not supported by TensorRT yet  
+          model_dir = os.path.join(model_dir, "opset8")
+          cmd.append(model_dir)         
+        elif config != 'Debug' and os.path.exists(model_dir):
           cmd.append(model_dir)
         if os.path.exists(onnx_test_data_dir):
           cmd.append(onnx_test_data_dir)
 
         if config == 'Debug' and provider == 'nuphar':
           return
-
+    
         run_subprocess([exe] + cmd, cwd=cwd)
         if enable_parallel_executor_test:
           run_subprocess([exe,'-x'] + cmd, cwd=cwd)
@@ -971,8 +972,7 @@ def main():
 
             if args.use_tensorrt:
               # Disable some onnx unit tests that TensorRT doesn't supported yet
-              onnx_test_data_dir = os.path.join(source_dir, "cmake", "external", "onnx", "onnx", "backend", "test", "data", "simple")
-              run_onnx_tests(build_dir, configs, onnx_test_data_dir, 'tensorrt', False, 1)
+              run_onnx_tests(build_dir, configs, '', 'tensorrt', False, 1)
             elif args.use_cuda:
               run_onnx_tests(build_dir, configs, onnx_test_data_dir, 'cuda', False, 2)
             elif args.x86 or platform.system() == 'Darwin':
