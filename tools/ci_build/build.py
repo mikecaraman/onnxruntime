@@ -629,7 +629,7 @@ def run_onnx_tests(build_dir, configs, onnx_test_data_dir, provider, enable_para
         if num_parallel_models > 0:
           cmd += ["-j", str(num_parallel_models)]
         
-        if config != 'Debug' and os.path.exists(model_dir):
+        if not is_windows() and config != 'Debug' and os.path.exists(model_dir):
           if provider == 'tensorrt':  
             # some models in opset9 and above are not supported by TensorRT yet  
             model_dir = os.path.join(model_dir, "opset8")  
@@ -638,9 +638,6 @@ def run_onnx_tests(build_dir, configs, onnx_test_data_dir, provider, enable_para
           cmd.append(onnx_test_data_dir)
 
         if config == 'Debug' and provider == 'nuphar':
-          return
-    
-        if is_windows() and config == 'Debug' and provider == 'tensorrt':
           return
     
         run_subprocess([exe] + cmd, cwd=cwd)
