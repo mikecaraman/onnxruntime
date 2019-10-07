@@ -180,7 +180,7 @@ Return Value:
                 this->GemmU8U8CopyPackARoutine = MlasGemmU8U8CopyPackAAvx2;
                 this->GemmU8U8CopyPackBRoutine = MlasGemmU8U8CopyPackBAvx2;
                 this->GemmU8U8Kernel = MlasGemmU8U8KernelAvx2;
-
+#if 0
                 if (((Cpuid7[1] & 0x10000) != 0) && ((xcr0 & 0xE0) == 0xE0)) {
 
                     this->GemmFloatKernel = MlasGemmFloatKernelAvx512F;
@@ -215,7 +215,9 @@ Return Value:
                         }
                     }
 
-                } else {
+                } else
+#endif                
+                 {
 
                     this->GemmFloatKernel = MlasGemmFloatKernelFma3;
                     this->GemmDoubleKernel = MlasGemmDoubleKernelFma3;
