@@ -14,6 +14,7 @@
 #include "core/optimizer/conv_activation_fusion.h"
 #include "core/optimizer/dropout_elimination.h"
 #include "core/optimizer/gemm_activation_fusion.h"
+#include "core/optimizer/gelu_fusion.h"
 #include "core/optimizer/graph_transformer.h"
 #include "core/optimizer/graph_transformer_mgr.h"
 #include "core/optimizer/identity_elimination.h"
@@ -171,8 +172,8 @@ TEST(GraphTransformationTests, ConstantFoldingSubgraph) {
   GraphProto subgraph;
   create_subgraph(subgraph);
 
-  if_node.AddAttribute("then_branch", {subgraph});
-  if_node.AddAttribute("else_branch", {subgraph});
+  if_node.AddAttribute("then_branch", subgraph);
+  if_node.AddAttribute("else_branch", subgraph);
 
   auto status = graph.Resolve();
   ASSERT_TRUE(status.IsOK()) << status;
@@ -644,6 +645,27 @@ TEST(GraphTransformationTests, ReluClip6Fusion) {
     }
   }
 }
+
+#ifndef DISABLE_CONTRIB_OPS
+TEST(GraphTransformationTests, GeluFusionTest) {
+  string model_uri = MODEL_FOLDER + "fusion/gelu.onnx";
+  std::shared_ptr<Model> p_model;
+  ASSERT_TRUE(Model::Load(model_uri, p_model).IsOK());
+  Graph& graph = p_model->MainGraph();
+
+  onnxruntime::GraphTransformerManager graph_transformation_mgr{5};
+  graph_transformation_mgr.Register(onnxruntime::make_unique<GeluFusion>(), TransformerLevel::Level2);
+  auto ret = graph_transformation_mgr.ApplyTransformers(graph, TransformerLevel::Level2);
+  ASSERT_TRUE(ret.IsOK());
+
+  std::map<std::string, int> op_to_count = CountOpsInGraph(graph);
+  ASSERT_TRUE(op_to_count["Div"] == 0);
+  ASSERT_TRUE(op_to_count["Add"] == 0);
+  ASSERT_TRUE(op_to_count["Erf"] == 0);
+  ASSERT_TRUE(op_to_count["Mul"] == 0);
+  ASSERT_TRUE(op_to_count["Gelu"] == 1);
+}
+#endif
 
 // test handling of Clip 11
 TEST(GraphTransformationTests, ReluClip11Fusion) {
