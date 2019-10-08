@@ -683,10 +683,6 @@ TEST(GraphTransformationTests, ReluClip11Fusion) {
   float16_tensor_type.mutable_tensor_type()->set_elem_type(TensorProto_DataType_FLOAT16);
   float16_tensor_type.mutable_tensor_type()->mutable_shape()->add_dim()->set_dim_value(1);
 
-  //TypeProto double_tensor_type;
-  //double_tensor_type.mutable_tensor_type()->set_elem_type(TensorProto_DataType_DOUBLE);
-  //double_tensor_type.mutable_tensor_type()->mutable_shape()->add_dim()->set_dim_value(1);
-
   // 4 paths in the model, each with Relu followed by Clip to test different aspects of Clip 11 handling
   // One has a Clip with mutable 'min' (don't fuse)
   // One has a Clip with constant 'min' < 0 (fuse and update 'min')
@@ -710,8 +706,8 @@ TEST(GraphTransformationTests, ReluClip11Fusion) {
   graph.AddInitializedTensor(const_min_1);
 
   TensorProto const_min_2;
-  Initializer i2(TensorProto_DataType_DOUBLE, "min_input_2", {1});
-  *i2.data<double>() = 1.0;
+  Initializer i2(TensorProto_DataType_FLOAT, "min_input_2", {1});
+  *i2.data<float>() = 1.f;
   i2.ToProto(const_min_2);
   graph.AddInitializedTensor(const_min_2);
 

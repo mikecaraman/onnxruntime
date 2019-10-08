@@ -12,6 +12,7 @@ namespace onnxruntime {
 Status FuseReluClip::Apply(Graph& graph, Node& node, RewriteRuleEffect& rule_effect) const {
   const auto& next_node = *node.OutputNodesBegin();
 
+  // Clip opset 6 has min and max as attributes. they're inputs from opset 11 on.
   bool min_max_are_attributes = graph_utils::IsSupportedOptypeVersionAndDomain(next_node, "Clip", {6});
 
   // if Clip had a min < 0 we need to replace that value with 0 to do what Relu would have done using just Clip
@@ -37,7 +38,7 @@ Status FuseReluClip::Apply(Graph& graph, Node& node, RewriteRuleEffect& rule_eff
     int32_t data_type;
 
     if (!initializer) {
-      // 'min' is the default value of std::numeric_limits<>::lowest so we can fuse and provide a constant
+      // 'min' is using the default value of std::numeric_limits<>::lowest so we can fuse and provide a constant
       // value of '0' for 'min'
 
       // we need to know the correct data type to create a valid initializer for the value 0.
@@ -99,9 +100,9 @@ Status FuseReluClip::Apply(Graph& graph, Node& node, RewriteRuleEffect& rule_eff
         graph.AddInitializedTensor(replacement_min);
         auto& mutable_input_defs = mutable_next_node->MutableInputDefs();
         NodeArg* replacement_min_nodearg = graph.GetNodeArg(replacement_min.name());
-        if (mutable_input_defs.size() == 1) {  // just the required 'input'
+        if (mutable_input_defs.size() == 1) {  // Clip node only has the required 'input' so add optional 'min' input
           mutable_input_defs.push_back(replacement_min_nodearg);
-          mutable_next_node->MutableInputArgsCount().push_back(1);  // adding one argument for input # 1
+          mutable_next_node->MutableInputArgsCount().push_back(1);
         } else {
           mutable_input_defs[1] = graph.GetNodeArg(replacement_min.name());
         }
