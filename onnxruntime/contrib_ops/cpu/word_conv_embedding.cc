@@ -36,17 +36,9 @@ void WordConvEmbedding::CharEmbeddingLookup(
 
 //input : [sequence_length, word_length, char_embedding_size]
 void WordConvEmbedding::ComputeConvMaxPoolWithActivation(
-    AllocatorPtr allocator,
-    const float* input,
-    const float* weights,
-    const float* bias,
-    const int* words_len_ptr,
-    int64_t seq_len,
-    int64_t word_len,
-    int64_t char_embedding_size,
-    int64_t filter_width,
-    int64_t num_filters,
-    float* output, concurrency::ThreadPool* tp) const {
+    AllocatorPtr allocator, const float* input, const float* weights, const float* bias,
+    const int* words_len_ptr, int64_t seq_len, int64_t word_len, int64_t char_embedding_size,
+    int64_t filter_width, int64_t num_filters, float* output, concurrency::ThreadPool* tp) const {
   int64_t input_word_size = word_len * char_embedding_size;
   int64_t unfolded_width = word_len - filter_width + 1;
   int64_t unfolded_kernal_size = filter_width * char_embedding_size;
@@ -161,9 +153,6 @@ Status WordConvEmbedding::ValidateInputShape(const TensorShape& w_conv_shape, co
 }
 
 Status WordConvEmbedding::Compute(OpKernelContext* ctx) const {
-  auto ctx_internal = static_cast<OpKernelContextInternal*>(ctx);
-  concurrency::ThreadPool* tp = ctx_internal->GetOperatorThreadPool();
-
   // original lstm processing
   const Tensor& sequence = *(ctx->Input<Tensor>(0));          // sequence: [sequence_length, word_length]
   const Tensor& w_conv = *(ctx->Input<Tensor>(1));            // conv weight: [M, C/group, kH, kW]
@@ -220,7 +209,8 @@ Status WordConvEmbedding::Compute(OpKernelContext* ctx) const {
       char_embedding_size,
       filter_width,
       filter_size,
-      Y->MutableData<float>(), tp);
+      Y->MutableData<float>(),
+      ctx->GetOperatorThreadPool());
 
   return Status::OK();
 }

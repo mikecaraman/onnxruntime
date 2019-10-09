@@ -86,8 +86,7 @@ class Softmax final : public OpKernel {
 
   Status Compute(OpKernelContext* ctx) const override {
 #ifndef USE_OPENMP
-    auto ctx_internal = static_cast<OpKernelContextInternal*>(ctx);
-    concurrency::ThreadPool* tp = ctx_internal->GetOperatorThreadPool();
+    concurrency::ThreadPool* tp = ctx->GetOperatorThreadPool();
 #endif
     const auto* tensor_pointer = ctx->Input<Tensor>(0);
     if (tensor_pointer == nullptr)
@@ -114,6 +113,8 @@ class Softmax final : public OpKernel {
       ComputeSoftMax(Eigen::DefaultDevice(), X_tensor, Y_tensor, use_log);
 #ifndef USE_OPENMP
     else
+      // TODO: Why are we doing this outside of the threadpool class in some places???
+      // TODO: Is it valid/good to not use the current thread, especially if there's only a little bit of work to do
       ComputeSoftMax(Eigen::ThreadPoolDevice(&tp->GetHandler(), tp->NumThreads()), X_tensor, Y_tensor, use_log);
 #endif
     return Status::OK();

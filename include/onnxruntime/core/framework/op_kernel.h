@@ -24,6 +24,9 @@ namespace onnxruntime {
 class IExecutionFrame;
 class OpKernelContext;
 class OpKernelWrapper;
+namespace concurrency {
+class ThreadPool;
+}
 
 class OpKernel {
  public:
@@ -162,6 +165,9 @@ class OpKernelContext {
   Returns the opset domain of the underlying kernel
   **/
   const std::string& GetOpDomain() const;
+
+  // _Ret_maybenull_ const onnxruntime::concurrency::ThreadPool* GetOperatorThreadPool() const { return session_state_.GetThreadPool(); }
+  virtual _Ret_maybenull_ onnxruntime::concurrency::ThreadPool* GetOperatorThreadPool() const { return nullptr; }
 
  protected:
   onnxruntime::NodeIndex GetNodeIndex() const;
