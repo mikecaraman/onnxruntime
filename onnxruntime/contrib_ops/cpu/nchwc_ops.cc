@@ -194,7 +194,8 @@ Status NchwcMaxPool::Compute(OpKernelContext* context) const {
 }
 
 Status NchwcAveragePool::Compute(OpKernelContext* context) const {
-  return NchwcPoolBase::NchwcPool(context, pool_attrs_.count_include_pad ? MlasAveragePoolingIncludePad : MlasAveragePoolingExcludePad);
+  return NchwcPoolBase::NchwcPool(context, pool_attrs_.count_include_pad ? MlasAveragePoolingIncludePad
+                                                                         : MlasAveragePoolingExcludePad);
 }
 
 }  // namespace contrib

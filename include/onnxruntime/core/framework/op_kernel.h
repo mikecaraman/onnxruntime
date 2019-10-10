@@ -166,7 +166,9 @@ class OpKernelContext {
   **/
   const std::string& GetOpDomain() const;
 
-  // _Ret_maybenull_ const onnxruntime::concurrency::ThreadPool* GetOperatorThreadPool() const { return session_state_.GetThreadPool(); }
+  /** 
+  Returns the intra-op threadpool, if available.
+  */
   virtual _Ret_maybenull_ onnxruntime::concurrency::ThreadPool* GetOperatorThreadPool() const { return nullptr; }
 
  protected:

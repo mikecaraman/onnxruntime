@@ -73,6 +73,8 @@ void CropAndResizeForward(const TensorShape& output_shape,
   int64_t pooled_height = output_shape[2];
   int64_t pooled_width = output_shape[3];
 
+  // TODO: This should do blocks of work based on the number of threads in the threadpool with each block
+  // being n_rois / num_threads
   std::function<void(int32_t)> work_object = [&](int32_t n) {
     int64_t index_n = n * channels * pooled_width * pooled_height;
 
@@ -84,13 +86,12 @@ void CropAndResizeForward(const TensorShape& output_shape,
     T roi_end_w = offset_bottom_rois[3];
     T roi_end_h = offset_bottom_rois[2];
 
-    T height_scale =
-        (pooled_height > 1)
-            ? (roi_end_h - roi_start_h) * (height - 1) / (pooled_height - 1)
-            : 0;
-    T width_scale =
-        (pooled_width > 1) ? (roi_end_w - roi_start_w) * (width - 1) / (pooled_width - 1)
-                           : 0;
+    T height_scale = (pooled_height > 1)
+                         ? (roi_end_h - roi_start_h) * (height - 1) / (pooled_height - 1)
+                         : 0;
+    T width_scale = (pooled_width > 1)
+                        ? (roi_end_w - roi_start_w) * (width - 1) / (pooled_width - 1)
+                        : 0;
 
     for (auto ph = 0; ph < pooled_height; ph++) {
       T in_y = static_cast<T>((pooled_height > 1)
@@ -225,7 +226,7 @@ Status CropAndResize<T>::Compute(OpKernelContext* context) const {
     return status;
   }
 
-  TensorShape Y_shape({num_rois, channels, crop_height, crop_width});
+  TensorShape Y_shape = {num_rois, channels, crop_height, crop_width};
   auto& Y = *context->Output(0, Y_shape);
   CropAndResizeForward<T>(
       Y_shape,

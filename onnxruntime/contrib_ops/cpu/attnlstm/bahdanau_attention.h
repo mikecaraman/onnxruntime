@@ -15,15 +15,15 @@ namespace contrib {
 template <typename T>
 class BahdanauAttention : public IAttentionMechanism<T> {
  public:
-  BahdanauAttention(AllocatorPtr allocator,
-                    const logging::Logger& logger,
-                    int batch_size,
-                    int max_memory_step,
-                    int memory_depth,
-                    int query_depth,
-                    int attn_depth,
-                    bool normalize,
-                    concurrency::ThreadPool* threadpool);
+  BahdanauAttention(
+      AllocatorPtr allocator,
+      const logging::Logger& logger,
+      int batch_size,
+      int max_memory_step,
+      int memory_depth,
+      int query_depth,
+      int attn_depth,
+      bool normalize, concurrency::ThreadPool* threadpool);
 
   void SetWeights(
       const gsl::span<const T>& attn_weights,

@@ -187,8 +187,6 @@ void RoiAlignForward(const TensorShape& output_shape,
 
   // TODO: This should do blocks of work based on the number of threads in the threadpool with each block
   // being n_rois / num_threads
-  // int64_t block_size = std::max(n_rois, n_rois / (tp ? tp->NumThreads() : 1));
-
   std::function<void(int32_t)> work_object = [&](int32_t n) {
     int64_t index_n = n * channels * pooled_width * pooled_height;
 
@@ -352,19 +350,19 @@ Status RoiAlign<T>::Compute(OpKernelContext* context) const {
     return status;
   }
 
-  TensorShape Y_shape({num_rois, num_channels, output_height_, output_width_});
+  TensorShape Y_shape = {num_rois, num_channels, this->output_height_, this->output_width_};
   auto& Y = *context->Output(0, Y_shape);
 
   RoiAlignForward<T>(Y_shape,
                      X_ptr->Data<T>(),
-                     spatial_scale_,
+                     this->spatial_scale_,
                      x_dims[2],  // height
                      x_dims[3],  // width
-                     sampling_ratio_,
+                     this->sampling_ratio_,
                      rois_ptr->Data<T>(),
                      num_roi_cols,
                      Y.template MutableData<T>(),
-                     mode_,
+                     this->mode_,
                      batch_indices_ptr->Data<int64_t>(),
                      context->GetOperatorThreadPool());
 
