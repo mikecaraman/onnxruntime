@@ -1,8 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "core/providers/cuda/cu_inc/common.cuh"
 #include "reverse_sequence_impl.h"
+#include "core/providers/cuda/cu_inc/common.cuh"
+#include "core/common/common.h"
 
 namespace onnxruntime {
 namespace cuda {
@@ -77,6 +78,8 @@ void ReverseSequenceCudaImpl(
         x_data, seq_len_data, y_data, batch_size, max_seq_len, element_size, 
         group_count, fdm_grouped_stride_0, fdm_grouped_stride_1);
   }
+  auto cuda_error = cudaGetLastError();
+  ORT_ENFORCE(cuda_error == cudaSuccess, "Reverse Sequence Launch kernel error:", cudaGetErrorString(cuda_error));
 }
 
 #define InstantiateReverseSequenceImpl(T)              \

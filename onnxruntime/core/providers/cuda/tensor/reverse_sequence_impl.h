@@ -9,8 +9,6 @@
 namespace onnxruntime {
 namespace cuda {
 
-int ReverseSequenceElementsPerThread(void);
-
 template <typename T>
 void ReverseSequenceCudaImpl(
     const T* x_data,

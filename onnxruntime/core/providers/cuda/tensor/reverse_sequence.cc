@@ -19,26 +19,6 @@ ONNX_OPERATOR_KERNEL_EX(
     KernelDefBuilder().TypeConstraint("T", DataTypeImpl::AllFixedSizeTensorTypes()),
     ReverseSequenceOp);
 
-template <typename T>
-static void ReverseSequenceImpl(
-    const Tensor& X,
-    const Tensor& sequence_lengths,
-    Tensor& Y,
-    const int64_t batch_size,
-    const int64_t max_seq_len,
-    const int64_t element_size,
-    bool time_major) {
-  const T* x_data = X.Data<T>();
-  const int64_t* seq_len_data = sequence_lengths.Data<int64_t>();
-  T* y_data = Y.MutableData<T>();
-
-  ReverseSequenceCudaImpl(
-      reinterpret_cast<const typename ToCudaType<T>::MappedType *>(x_data), seq_len_data,
-      reinterpret_cast<typename ToCudaType<T>::MappedType *>(y_data),
-      gsl::narrow<int>(batch_size), gsl::narrow<int>(max_seq_len), gsl::narrow<int>(element_size),
-      time_major);
-}
-
 Status ReverseSequenceOp::ComputeInternal(OpKernelContext* context) const {
   const auto& X = *context->Input<Tensor>(0);
   const auto data_type = X.DataType();
@@ -57,26 +37,29 @@ Status ReverseSequenceOp::ComputeInternal(OpKernelContext* context) const {
   }
   auto& Y = *context->Output(0, dims);
 
-  #define CheckAndCallTypedImpl(T)                              \
-    if (data_type == DataTypeImpl::GetType<T>()) {              \
-      ReverseSequenceImpl<T>(                                   \
-          X, seq_lengths, Y,                                    \
-          batch_size, max_seq_len, element_size, time_major_);  \
-      return Status::OK();                                      \
+  #define CallCudaImplIfType(T)                                                                            \
+    if (data_type == DataTypeImpl::GetType<T>()) {                                                         \
+      ReverseSequenceCudaImpl(                                                                             \
+          reinterpret_cast<const typename ToCudaType<T>::MappedType *>(X.template Data<T>()),              \
+          seq_lengths.Data<int64_t>(),                                                                     \
+          reinterpret_cast<typename ToCudaType<T>::MappedType *>(Y.template MutableData<T>()),             \
+          gsl::narrow<int>(batch_size), gsl::narrow<int>(max_seq_len), gsl::narrow<int>(element_size),     \
+          time_major_);                                                                                    \
+      return Status::OK();                                                                                 \
     }
 
-  CheckAndCallTypedImpl(float)
-  CheckAndCallTypedImpl(MLFloat16)
-  CheckAndCallTypedImpl(int32_t)
-  CheckAndCallTypedImpl(uint32_t)
-  CheckAndCallTypedImpl(int16_t)
-  CheckAndCallTypedImpl(uint16_t)
-  CheckAndCallTypedImpl(int8_t)
-  CheckAndCallTypedImpl(uint8_t)
-  CheckAndCallTypedImpl(double)
-  CheckAndCallTypedImpl(bool)
-  CheckAndCallTypedImpl(int64_t)
-  CheckAndCallTypedImpl(uint64_t)
+  CallCudaImplIfType(float)
+  CallCudaImplIfType(MLFloat16)
+  CallCudaImplIfType(int32_t)
+  CallCudaImplIfType(uint32_t)
+  CallCudaImplIfType(int16_t)
+  CallCudaImplIfType(uint16_t)
+  CallCudaImplIfType(int8_t)
+  CallCudaImplIfType(uint8_t)
+  CallCudaImplIfType(double)
+  CallCudaImplIfType(bool)
+  CallCudaImplIfType(int64_t)
+  CallCudaImplIfType(uint64_t)
 
   return ORT_MAKE_STATUS(ONNXRUNTIME, NOT_IMPLEMENTED, 
       "Type for ", data_type, " is not supported yet in ReverseSequence.");
