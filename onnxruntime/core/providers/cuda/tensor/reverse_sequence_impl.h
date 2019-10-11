@@ -16,11 +16,10 @@ void ReverseSequenceCudaImpl(
     const T* x_data,
     const int64_t* seq_len_data,
     T* y_data, 
-    int batch_size, 
-    int max_seq_len,
-    int element_size,
-    bool time_major,
-    const fast_divmod* fdm_grouped_strides);
+    const int batch_size, 
+    const int max_seq_len,
+    const int element_size,
+    const bool time_major);
 
 }  // namespace cuda
 }  // namespace onnxruntime

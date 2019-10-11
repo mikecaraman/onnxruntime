@@ -16,7 +16,6 @@ ONNX_OPERATOR_KERNEL_EX(
     kOnnxDomain,
     10,
     kCudaExecutionProvider,
-    // No string type implmeneted in cuda
     KernelDefBuilder().TypeConstraint("T", DataTypeImpl::AllFixedSizeTensorTypes()),
     ReverseSequenceOp);
 
@@ -28,18 +27,16 @@ static void ReverseSequenceImpl(
     const int64_t batch_size,
     const int64_t max_seq_len,
     const int64_t element_size,
-    bool time_major,
-    const fast_divmod* fdm_grouped_strides) {
+    bool time_major) {
   const T* x_data = X.Data<T>();
   const int64_t* seq_len_data = sequence_lengths.Data<int64_t>();
   T* y_data = Y.MutableData<T>();
 
   ReverseSequenceCudaImpl(
-      reinterpret_cast<const typename ToCudaType<T>::MappedType *>(x_data),
-      seq_len_data,
+      reinterpret_cast<const typename ToCudaType<T>::MappedType *>(x_data), seq_len_data,
       reinterpret_cast<typename ToCudaType<T>::MappedType *>(y_data),
       gsl::narrow<int>(batch_size), gsl::narrow<int>(max_seq_len), gsl::narrow<int>(element_size),
-      time_major, fdm_grouped_strides);
+      time_major);
 }
 
 Status ReverseSequenceOp::ComputeInternal(OpKernelContext* context) const {
@@ -58,24 +55,13 @@ Status ReverseSequenceOp::ComputeInternal(OpKernelContext* context) const {
     return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT, "sequence_lens shape must be {batch_size}. Got:",
                            seq_len_shape, ". batch_size=", batch_size);
   }
-
-  // elements per threads
-  int ept = ReverseSequenceElementsPerThread();
-  int64_t element_group_size = (element_size + ept - 1) / ept;
-  std::vector<int64_t> grouped_strides = {element_group_size, element_group_size, 1};
-  grouped_strides[0] *= (time_major_) ? batch_size : max_seq_len;
-  CudaAsyncBuffer<fast_divmod> fdm_grouped_strides(this, 3);
-  ORT_ENFORCE(CalculateFdmStrides(fdm_grouped_strides.CpuSpan(), grouped_strides));
-  ORT_RETURN_IF_ERROR(fdm_grouped_strides.CopyToGpu());
-
   auto& Y = *context->Output(0, dims);
 
   #define CheckAndCallTypedImpl(T)                              \
     if (data_type == DataTypeImpl::GetType<T>()) {              \
       ReverseSequenceImpl<T>(                                   \
           X, seq_lengths, Y,                                    \
-          batch_size, max_seq_len, element_size,                \
-          time_major_, fdm_grouped_strides.GpuPtr());           \
+          batch_size, max_seq_len, element_size, time_major_);  \
       return Status::OK();                                      \
     }
 
@@ -94,8 +80,6 @@ Status ReverseSequenceOp::ComputeInternal(OpKernelContext* context) const {
 
   return ORT_MAKE_STATUS(ONNXRUNTIME, NOT_IMPLEMENTED, 
       "Type for ", data_type, " is not supported yet in ReverseSequence.");
-
-  return Status::OK();
 }
 
 }  // namespace cuda
