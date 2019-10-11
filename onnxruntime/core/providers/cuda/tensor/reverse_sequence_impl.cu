@@ -68,6 +68,8 @@ void ReverseSequenceCudaImpl(
   fast_divmod fdm_grouped_stride_0(element_group_size * ((time_major) ? batch_size : max_seq_len));
   int group_count = batch_size * max_seq_len * element_group_size;
   int blocksPerGrid = (int)((group_count + GridDim::maxThreadsPerBlock - 1) / GridDim::maxThreadsPerBlock);
+  // clear any existing last error in same host thread.
+  cudaGetLastError();
   if (time_major) {
     ReverseSequenceImplKernel<T, true><<<blocksPerGrid, GridDim::maxThreadsPerBlock>>>(
         x_data, seq_len_data, y_data, batch_size, max_seq_len, element_size, 
@@ -79,7 +81,8 @@ void ReverseSequenceCudaImpl(
         group_count, fdm_grouped_stride_0, fdm_grouped_stride_1);
   }
   auto cuda_error = cudaGetLastError();
-  ORT_ENFORCE(cuda_error == cudaSuccess, "Reverse Sequence Launch kernel error:", cudaGetErrorString(cuda_error));
+  ORT_ENFORCE(cuda_error == cudaSuccess, 
+              "Error launching Reverse Sequence kernel: ", cudaGetErrorString(cuda_error));
 }
 
 #define InstantiateReverseSequenceImpl(T)              \
