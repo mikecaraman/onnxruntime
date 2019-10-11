@@ -63,11 +63,11 @@ void ReverseSequenceCudaImpl(
     const int element_size,
     const bool time_major)
 {
-  int64_t element_group_size = (element_size + kReverseSequenceElementsPerThread - 1) / kReverseSequenceElementsPerThread;
+  int element_group_size =  CeilDiv(element_size, kReverseSequenceElementsPerThread);
   fast_divmod fdm_grouped_stride_1(element_group_size);
   fast_divmod fdm_grouped_stride_0(element_group_size * ((time_major) ? batch_size : max_seq_len));
   int group_count = batch_size * max_seq_len * element_group_size;
-  int blocksPerGrid = (int)((group_count + GridDim::maxThreadsPerBlock - 1) / GridDim::maxThreadsPerBlock);
+  int blocksPerGrid = CeilDiv(group_count, GridDim::maxThreadsPerBlock);
   // clear any existing last error in same host thread.
   cudaGetLastError();
   if (time_major) {
